@@ -1,5 +1,6 @@
--- PostgreSQL 获取所有表的 DDL（含字段注释、主键）
--- 在 pgAdmin / DBeaver 等工具中运行，复制结果即为建表语句
+-- PostgreSQL 获取指定库（先连接到目标库）下所有表的 DDL（含字段注释、主键）
+-- 使用方式：先连接到 hdr 库（或目标库），再执行此查询
+-- 不加 schema 过滤 = 查该库下所有 schema 的表；如需限定可修改 n.nspname
 
 SELECT
     '-- ========================================' || E'\n' ||
@@ -42,7 +43,7 @@ FROM
     ) pk ON pk.conrelid = c.oid
 WHERE
     c.relkind = 'r'  -- 普通表
-    AND n.nspname = 'public'  -- 只查 public schema
+    -- AND n.nspname = 'public'  -- 取消注释并按需修改 schema 名，不注释则查所有 schema
     AND a.attnum > 0
     AND NOT a.attisdropped
 GROUP BY

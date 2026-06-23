@@ -1,0 +1,4 @@
+# Reasonix 桌面应用本地状态（不同电脑不一致）
+.reasonix/desktop-topic-created-at.json
+.reasonix/desktop-topic-title-sources.json
+.reasonix/desktop-topic-titles.json
