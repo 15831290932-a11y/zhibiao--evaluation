@@ -30,10 +30,11 @@ SELECT
     pg_size_pretty(pg_total_relation_size(t.schemaname||'.'||t.tablename)::bigint) AS 总空间,
     pg_size_pretty(pg_table_size(t.schemaname||'.'||t.tablename)::bigint) AS 表数据空间,
     pg_size_pretty(pg_indexes_size(t.schemaname||'.'||t.tablename)::bigint) AS 索引空间,
-    pg_size_pretty(pg_total_relation_size(t.schemaname||'.'||t.tablename)::bigint)
-        - pg_size_pretty(pg_table_size(t.schemaname||'.'||t.tablename)::bigint)::bigint
-        - pg_size_pretty(pg_indexes_size(t.schemaname||'.'||t.tablename)::bigint)::bigint
-        AS 其他(TOAST等),
+    pg_size_pretty(
+        pg_total_relation_size(t.schemaname||'.'||t.tablename)
+        - pg_table_size(t.schemaname||'.'||t.tablename)
+        - pg_indexes_size(t.schemaname||'.'||t.tablename)
+    ) AS 其他(TOAST等),
     (SELECT n_live_tup FROM pg_stat_user_tables WHERE schemaname=t.schemaname AND relname=t.tablename) AS 存活行数,
     (SELECT n_dead_tup FROM pg_stat_user_tables WHERE schemaname=t.schemaname AND relname=t.tablename) AS 死行数
 FROM pg_tables t
