@@ -26,19 +26,19 @@ ORDER BY SUM(pg_total_relation_size(schemaname||'.'||tablename)::bigint) DESC;
 
 -- 3. TOP 50 大表（含索引空间）
 SELECT
-    schemaname || '.' || tablename AS 表名,
-    pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)::bigint) AS 总空间,
-    pg_size_pretty(pg_table_size(schemaname||'.'||tablename)::bigint) AS 表数据空间,
-    pg_size_pretty(pg_indexes_size(schemaname||'.'||tablename)::bigint) AS 索引空间,
-    pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)::bigint)
-        - pg_size_pretty(pg_table_size(schemaname||'.'||tablename)::bigint)::bigint
-        - pg_size_pretty(pg_indexes_size(schemaname||'.'||tablename)::bigint)::bigint
+    t.schemaname || '.' || t.tablename AS 表名,
+    pg_size_pretty(pg_total_relation_size(t.schemaname||'.'||t.tablename)::bigint) AS 总空间,
+    pg_size_pretty(pg_table_size(t.schemaname||'.'||t.tablename)::bigint) AS 表数据空间,
+    pg_size_pretty(pg_indexes_size(t.schemaname||'.'||t.tablename)::bigint) AS 索引空间,
+    pg_size_pretty(pg_total_relation_size(t.schemaname||'.'||t.tablename)::bigint)
+        - pg_size_pretty(pg_table_size(t.schemaname||'.'||t.tablename)::bigint)::bigint
+        - pg_size_pretty(pg_indexes_size(t.schemaname||'.'||t.tablename)::bigint)::bigint
         AS 其他(TOAST等),
     (SELECT n_live_tup FROM pg_stat_user_tables WHERE schemaname=t.schemaname AND relname=t.tablename) AS 存活行数,
     (SELECT n_dead_tup FROM pg_stat_user_tables WHERE schemaname=t.schemaname AND relname=t.tablename) AS 死行数
 FROM pg_tables t
-WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
-ORDER BY pg_total_relation_size(schemaname||'.'||tablename)::bigint DESC
+WHERE t.schemaname NOT IN ('pg_catalog', 'information_schema')
+ORDER BY pg_total_relation_size(t.schemaname||'.'||t.tablename)::bigint DESC
 LIMIT 50;
 
 -- 4. 表膨胀分析（需要 pgstattuple 扩展，如未安装则跳过）
@@ -53,29 +53,29 @@ LIMIT 50;
 
 -- 5. TOP 50 大索引
 SELECT
-    schemaname || '.' || indexname AS 索引名,
-    schemaname || '.' || tablename AS 所属表,
-    pg_size_pretty(pg_relation_size((schemaname||'.'||indexname)::regclass)::bigint) AS 索引大小,
-    idx_scan AS 索引扫描次数,
-    idx_tup_read AS 读取行数,
-    idx_tup_fetch AS 获取行数
+    i.schemaname || '.' || i.indexname AS 索引名,
+    i.schemaname || '.' || i.tablename AS 所属表,
+    pg_size_pretty(pg_relation_size((i.schemaname||'.'||i.indexname)::regclass)::bigint) AS 索引大小,
+    ui.idx_scan AS 索引扫描次数,
+    ui.idx_tup_read AS 读取行数,
+    ui.idx_tup_fetch AS 获取行数
 FROM pg_indexes i
 JOIN pg_stat_user_indexes ui ON ui.indexrelname = i.indexname AND ui.schemaname = i.schemaname
 WHERE i.schemaname NOT IN ('pg_catalog', 'information_schema')
-ORDER BY pg_relation_size((schemaname||'.'||indexname)::regclass)::bigint DESC
+ORDER BY pg_relation_size((i.schemaname||'.'||i.indexname)::regclass)::bigint DESC
 LIMIT 50;
 
 -- 6. 从未使用的索引（idx_scan = 0 或极低）
 SELECT
-    schemaname || '.' || indexname AS 索引名,
-    schemaname || '.' || tablename AS 所属表,
-    pg_size_pretty(pg_relation_size((schemaname||'.'||indexname)::regclass)::bigint) AS 索引大小,
-    idx_scan AS 扫描次数
+    i.schemaname || '.' || i.indexname AS 索引名,
+    i.schemaname || '.' || i.tablename AS 所属表,
+    pg_size_pretty(pg_relation_size((i.schemaname||'.'||i.indexname)::regclass)::bigint) AS 索引大小,
+    ui.idx_scan AS 扫描次数
 FROM pg_indexes i
 JOIN pg_stat_user_indexes ui ON ui.indexrelname = i.indexname AND ui.schemaname = i.schemaname
 WHERE i.schemaname NOT IN ('pg_catalog', 'information_schema')
-  AND idx_scan = 0
-ORDER BY pg_relation_size((schemaname||'.'||indexname)::regclass)::bigint DESC;
+  AND ui.idx_scan = 0
+ORDER BY pg_relation_size((i.schemaname||'.'||i.indexname)::regclass)::bigint DESC;
 
 -- 7. 重复索引检测
 SELECT
